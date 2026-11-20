@@ -1,9 +1,9 @@
 #!/bin/bash
-# <xbar.title>网络切换</xbar.title>
-# <xbar.version>v2.1</xbar.version>
+# <xbar.title>网络切换 / Network Switch</xbar.title>
+# <xbar.version>v2.2</xbar.version>
 # <xbar.author>Otakun and Dash</xbar.author>
 # <xbar.author.github>iam-otakun</xbar.author.github>
-# <xbar.desc>在菜单栏一键切换当前网络的出口：同一局域网内的两个网关（例如直连的主路由与出海的旁路由）之间切换。地点存为 Profile：每个 Profile 各存直连与出海两组网关和 DNS，Profile 的添加、编辑（含改名）、删除、选用都在菜单里完成。网卡服务与本机 IP 自动检测，同一个插件文件在任何 Mac 上原样可用。</xbar.desc>
+# <xbar.desc>Switch the active network connection between two gateways on the same LAN from the menu bar. Locations are kept as Profiles, each storing a gateway and DNS for its Direct and Overseas exits; Profiles can be added, edited (rename included), deleted and selected from the menu. The network service and this Mac's own IP are detected automatically. UI language follows the system. 在菜单栏一键切换当前网络的出口：同一局域网内的两个网关之间切换。地点存为 Profile，每个 Profile 各存直连与出海两组网关和 DNS，添加、编辑（含改名）、删除、选用都在菜单里完成。网卡与本机 IP 自动检测，界面语言跟随系统。</xbar.desc>
 # <xbar.dependencies>bash</xbar.dependencies>
 # <xbar.abouturl>https://github.com/iam-otakun/swiftbar-network-switch</xbar.abouturl>
 # SwiftBar 插件：网络切换 v2（Profile 版）
@@ -13,6 +13,56 @@
 # 配置文件：~/.network-switch.conf（v1 老配置会自动迁移为名为「默认」的 Profile）
 
 CONF="$HOME/.network-switch.conf"
+
+# ---------- 界面语言：跟随系统（中文系统用中文，其它用英文）；环境变量 NETSWITCH_LANG 可覆盖 ----------
+if [ -n "$NETSWITCH_LANG" ]; then
+  case "$NETSWITCH_LANG" in zh*) UI=zh ;; *) UI=en ;; esac
+else
+  LANG1=$(defaults read -g AppleLanguages 2>/dev/null | grep -o '"[^"]*"' | head -1 | tr -d '"')
+  [ -z "$LANG1" ] && LANG1=$(defaults read -g AppleLocale 2>/dev/null)
+  case "$LANG1" in zh*) UI=zh ;; *) UI=en ;; esac
+fi
+if [ "$UI" = zh ]; then
+  L_DIRECT="直连"; L_OVERSEAS="出海"; L_UNKNOWN="未知"; L_GW="网关"
+  L_AUTO="自动（DHCP）"; L_DHCP="恢复自动（DHCP）"; L_QUIT="退出"
+  L_EDIT="编辑此 Profile…"; L_DEL="删除此 Profile…"; L_ADD="添加 Profile…"
+  L_NOTCONF="未配置"; L_NOTCONF_TIP="还没有任何 Profile"; L_NOTCONF_LINE="还没有 Profile，先添加一个"
+  L_TIP_FMT='当前：%s-%s，网关 %s，DNS %s，网卡 %s（%s）'
+  L_STATUS_FMT='当前：%s-%s（网关 %s，DNS %s）'
+  L_EXIT_FMT='%s（网关 %s，DNS %s）'
+  L_LBL_FMT='「%s」%s · %s'
+  L_DLG_TITLE="网络切换 · Profile"
+  L_NAME_PROMPT="Profile 名称（例如 Home、Office）"
+  L_CANCEL="取消"; L_NEXT="下一步"; L_SAVE="保存"; L_DELETE_BTN="删除"
+  L_SWITCH_FAIL="切换失败"; L_NO_IP_FMT='当前网卡（%s）没有 IP 地址，无法切换。'
+  L_NOT_SAVED="未保存"; L_NOT_ADDED="未添加"; L_CANT_DELETE="不能删除"
+  L_BAD_IP="有地址格式不对，应为 IPv4 形式，例如 192.168.1.1。"
+  L_NAME_EMPTY="Profile 名称不能为空。"
+  L_NAME_PIPE="Profile 名称不能包含 | 字符。"
+  L_NAME_EXISTS_FMT='已经有一个叫「%s」的 Profile 了。'
+  L_KEEP_ONE="至少要保留一个 Profile。"
+  L_DEL_Q_FMT='删除 Profile「%s」？'
+else
+  L_DIRECT="Direct"; L_OVERSEAS="Overseas"; L_UNKNOWN="Unknown"; L_GW="Gateway"
+  L_AUTO="Automatic (DHCP)"; L_DHCP="Restore Automatic (DHCP)"; L_QUIT="Quit"
+  L_EDIT="Edit this Profile..."; L_DEL="Delete this Profile..."; L_ADD="Add Profile..."
+  L_NOTCONF="Not Configured"; L_NOTCONF_TIP="No Profiles yet"; L_NOTCONF_LINE="No Profiles yet - add one first"
+  L_TIP_FMT='Current: %s-%s, gateway %s, DNS %s, service %s (%s)'
+  L_STATUS_FMT='Current: %s-%s (gateway %s, DNS %s)'
+  L_EXIT_FMT='%s (gateway %s, DNS %s)'
+  L_LBL_FMT='%s - %s - %s'
+  L_DLG_TITLE="Network Switch - Profile"
+  L_NAME_PROMPT="Profile name (e.g. Home, Office)"
+  L_CANCEL="Cancel"; L_NEXT="Next"; L_SAVE="Save"; L_DELETE_BTN="Delete"
+  L_SWITCH_FAIL="Switch Failed"; L_NO_IP_FMT='The current service (%s) has no IP address, so switching is not possible.'
+  L_NOT_SAVED="Not Saved"; L_NOT_ADDED="Not Added"; L_CANT_DELETE="Cannot Delete"
+  L_BAD_IP="One of the addresses is not in IPv4 form, e.g. 192.168.1.1."
+  L_NAME_EMPTY="The Profile name cannot be empty."
+  L_NAME_PIPE="The Profile name cannot contain the | character."
+  L_NAME_EXISTS_FMT='A Profile named %s already exists.'
+  L_KEEP_ONE="At least one Profile must remain."
+  L_DEL_Q_FMT='Delete the Profile %s?'
+fi
 
 # ---------- 配置 ----------
 # 格式：
@@ -143,7 +193,7 @@ do_switch() { # $1=网关 $2=DNS
   ip=$(info_field "$svc" "IP address")
   mask=$(info_field "$svc" "Subnet mask")
   if [ -z "$ip" ] || [ -z "$mask" ]; then
-    alert "切换失败" "当前网卡（$svc）没有 IP 地址，无法切换。"
+    alert "$L_SWITCH_FAIL" "$(printf "$L_NO_IP_FMT" "$svc")"
     return 0
   fi
   osascript -e "do shell script \"/usr/sbin/networksetup -setmanual '$svc' $ip $mask $1 && /usr/sbin/networksetup -setdnsservers '$svc' $2\" with administrator privileges" >/dev/null 2>&1
@@ -156,22 +206,26 @@ do_dhcp() {
 }
 
 ask_name() { # $1=默认值；取消时返回非 0
-  osascript - "$1" <<'APPLESCRIPT'
+  osascript - "$1" "$L_NAME_PROMPT" "$L_DLG_TITLE" "$L_CANCEL" "$L_NEXT" <<'APPLESCRIPT'
 on run argv
-  set n to text returned of (display dialog "Profile 名称（例如 Home、Office）" default answer (item 1 of argv) with title "网络切换 · Profile" buttons {"取消", "下一步"} default button "下一步")
+  set n to text returned of (display dialog (item 2 of argv) default answer (item 1 of argv) with title (item 3 of argv) buttons {(item 4 of argv), (item 5 of argv)} default button (item 5 of argv))
   return n
 end run
 APPLESCRIPT
 }
 
 ask_values() { # $1=Profile 名 $2..$5=直连网关/直连DNS/出海网关/出海DNS 的默认值
-  osascript - "$1" "$2" "$3" "$4" "$5" <<'APPLESCRIPT'
+  local lbl1 lbl2 lbl3 lbl4
+  lbl1=$(printf "$L_LBL_FMT" "$1" "$L_DIRECT" "$L_GW")
+  lbl2=$(printf "$L_LBL_FMT" "$1" "$L_DIRECT" "DNS")
+  lbl3=$(printf "$L_LBL_FMT" "$1" "$L_OVERSEAS" "$L_GW")
+  lbl4=$(printf "$L_LBL_FMT" "$1" "$L_OVERSEAS" "DNS")
+  osascript - "$1" "$2" "$3" "$4" "$5" "$L_DLG_TITLE" "$L_CANCEL" "$L_NEXT" "$L_SAVE" "$lbl1" "$lbl2" "$lbl3" "$lbl4" <<'APPLESCRIPT'
 on run argv
-  set p to item 1 of argv
-  set gw1 to text returned of (display dialog "「" & p & "」直连 · 网关" default answer (item 2 of argv) with title "网络切换 · Profile" buttons {"取消", "下一步"} default button "下一步")
-  set dns1 to text returned of (display dialog "「" & p & "」直连 · DNS" default answer (item 3 of argv) with title "网络切换 · Profile" buttons {"取消", "下一步"} default button "下一步")
-  set gw2 to text returned of (display dialog "「" & p & "」出海 · 网关" default answer (item 4 of argv) with title "网络切换 · Profile" buttons {"取消", "下一步"} default button "下一步")
-  set dns2 to text returned of (display dialog "「" & p & "」出海 · DNS" default answer (item 5 of argv) with title "网络切换 · Profile" buttons {"取消", "保存"} default button "保存")
+  set gw1 to text returned of (display dialog (item 10 of argv) default answer (item 2 of argv) with title (item 6 of argv) buttons {(item 7 of argv), (item 8 of argv)} default button (item 8 of argv))
+  set dns1 to text returned of (display dialog (item 11 of argv) default answer (item 3 of argv) with title (item 6 of argv) buttons {(item 7 of argv), (item 8 of argv)} default button (item 8 of argv))
+  set gw2 to text returned of (display dialog (item 12 of argv) default answer (item 4 of argv) with title (item 6 of argv) buttons {(item 7 of argv), (item 8 of argv)} default button (item 8 of argv))
+  set dns2 to text returned of (display dialog (item 13 of argv) default answer (item 5 of argv) with title (item 6 of argv) buttons {(item 7 of argv), (item 9 of argv)} default button (item 9 of argv))
   return gw1 & linefeed & dns1 & linefeed & gw2 & linefeed & dns2
 end run
 APPLESCRIPT
@@ -181,7 +235,7 @@ check_values() { # 四个地址逐个验 IPv4 格式，坏则弹窗并返回非 
   local v
   for v in "$1" "$2" "$3" "$4"; do
     if ! valid_ip "$v"; then
-      alert "未保存" "有地址格式不对，应为 IPv4 形式，例如 192.168.1.1。"
+      alert "$L_NOT_SAVED" "$L_BAD_IP"
       return 1
     fi
   done
@@ -193,14 +247,14 @@ add_profile() {
   name=$(ask_name "") || return 0
   name=$(echo "$name" | sed 's/^ *//; s/ *$//')
   if [ -z "$name" ]; then
-    alert "未添加" "Profile 名称不能为空。"
+    alert "$L_NOT_ADDED" "$L_NAME_EMPTY"
     return 0
   fi
   case "$name" in
-    *"|"*) alert "未添加" "Profile 名称不能包含 | 字符。"; return 0 ;;
+    *"|"*) alert "$L_NOT_ADDED" "$L_NAME_PIPE"; return 0 ;;
   esac
   if name_exists "$name"; then
-    alert "未添加" "已经有一个叫「$name」的 Profile 了。"
+    alert "$L_NOT_ADDED" "$(printf "$L_NAME_EXISTS_FMT" "$name")"
     return 0
   fi
   out=$(ask_values "$name" "" "" "" "") || return 0
@@ -220,14 +274,14 @@ edit_profile() { # $1=Profile 名；第一步先改名（可不改），再改�
   new_name=$(ask_name "$old_name") || return 0
   new_name=$(echo "$new_name" | sed 's/^ *//; s/ *$//')
   if [ -z "$new_name" ]; then
-    alert "未保存" "Profile 名称不能为空。"
+    alert "$L_NOT_SAVED" "$L_NAME_EMPTY"
     return 0
   fi
   case "$new_name" in
-    *"|"*) alert "未保存" "Profile 名称不能包含 | 字符。"; return 0 ;;
+    *"|"*) alert "$L_NOT_SAVED" "$L_NAME_PIPE"; return 0 ;;
   esac
   if [ "$new_name" != "$old_name" ] && name_exists "$new_name"; then
-    alert "未保存" "已经有一个叫「$new_name」的 Profile 了。"
+    alert "$L_NOT_SAVED" "$(printf "$L_NAME_EXISTS_FMT" "$new_name")"
     return 0
   fi
   out=$(ask_values "$new_name" "${P_DGW[$idx]}" "${P_DDNS[$idx]}" "${P_OGW[$idx]}" "${P_ODNS[$idx]}") || return 0
@@ -243,11 +297,13 @@ edit_profile() { # $1=Profile 名；第一步先改名（可不改），再改�
 del_profile() { # $1=Profile 名
   local idx btn n_names n_dgw n_ddns n_ogw n_odns i
   if [ "${#P_NAMES[@]}" -le 1 ]; then
-    alert "不能删除" "至少要保留一个 Profile。"
+    alert "$L_CANT_DELETE" "$L_KEEP_ONE"
     return 0
   fi
-  btn=$(osascript -e "button returned of (display dialog \"删除 Profile「$1」？\" with title \"网络切换 · Profile\" buttons {\"取消\", \"删除\"} default button \"取消\")") || return 0
-  [ "$btn" = "删除" ] || return 0
+  local q
+  q=$(printf "$L_DEL_Q_FMT" "$1")
+  btn=$(osascript -e "button returned of (display dialog \"$q\" with title \"$L_DLG_TITLE\" buttons {\"$L_CANCEL\", \"$L_DELETE_BTN\"} default button \"$L_CANCEL\")") || return 0
+  [ "$btn" = "$L_DELETE_BTN" ] || return 0
   idx=$(idx_of "$1")
   n_names=(); n_dgw=(); n_ddns=(); n_ogw=(); n_odns=()
   for i in "${!P_NAMES[@]}"; do
@@ -284,12 +340,12 @@ esac
 # ---------- 菜单渲染 ----------
 
 if [ "${#P_NAMES[@]}" -eq 0 ]; then
-  echo "未配置 | tooltip=\"还没有任何 Profile\""
+  echo "$L_NOTCONF | tooltip=\"$L_NOTCONF_TIP\""
   echo "---"
-  echo "还没有 Profile，先添加一个"
+  echo "$L_NOTCONF_LINE"
   echo "---"
-  echo "添加 Profile… | bash=\"$0\" param0=addprofile terminal=false refresh=true"
-  echo "退出 | bash=\"$0\" param0=quit terminal=false"
+  echo "$L_ADD | bash=\"$0\" param0=addprofile terminal=false refresh=true"
+  echo "$L_QUIT | bash=\"$0\" param0=quit terminal=false"
   exit 0
 fi
 
@@ -299,20 +355,21 @@ GW=$(info_field "$SVC" "Router")
 MYIP=$(info_field "$SVC" "IP address")
 DNS=$(networksetup -getdnsservers "$SVC" 2>/dev/null | head -1)
 case "$DNS" in
-  *"aren't any"*) DNS="自动（DHCP）" ;;
+  *"aren't any"*) DNS="$L_AUTO" ;;
 esac
 
 if [ "$GW" = "${P_DGW[$idx]}" ]; then
-  MODE="直连"
+  MODE="$L_DIRECT"
 elif [ "$GW" = "${P_OGW[$idx]}" ]; then
-  MODE="出海"
+  MODE="$L_OVERSEAS"
 else
-  MODE="未知"
+  MODE="$L_UNKNOWN"
 fi
 
-echo "$ACTIVE-$MODE | tooltip=\"当前：$ACTIVE-$MODE，网关 $GW，DNS $DNS，网卡 $SVC（$MYIP）\""
+TIP=$(printf "$L_TIP_FMT" "$ACTIVE" "$MODE" "$GW" "$DNS" "$SVC" "$MYIP")
+echo "$ACTIVE-$MODE | tooltip=\"$TIP\""
 echo "---"
-echo "当前：$ACTIVE-$MODE（网关 $GW，DNS $DNS）"
+printf "$L_STATUS_FMT\n" "$ACTIVE" "$MODE" "$GW" "$DNS"
 echo "---"
 for i in "${!P_NAMES[@]}"; do
   if [ "${P_NAMES[$i]}" = "$ACTIVE" ]; then
@@ -322,17 +379,19 @@ for i in "${!P_NAMES[@]}"; do
   fi
   C1=""; C2=""
   if [ "${P_NAMES[$i]}" = "$ACTIVE" ]; then
-    [ "$MODE" = "直连" ] && C1=" checked=true"
-    [ "$MODE" = "出海" ] && C2=" checked=true"
+    [ "$MODE" = "$L_DIRECT" ] && C1=" checked=true"
+    [ "$MODE" = "$L_OVERSEAS" ] && C2=" checked=true"
   fi
-  echo "--直连（网关 ${P_DGW[$i]}，DNS ${P_DDNS[$i]}） | bash=\"$0\" param0=switch param1=\"${P_NAMES[$i]}\" param2=direct terminal=false refresh=true$C1"
-  echo "--出海（网关 ${P_OGW[$i]}，DNS ${P_ODNS[$i]}） | bash=\"$0\" param0=switch param1=\"${P_NAMES[$i]}\" param2=overseas terminal=false refresh=true$C2"
+  DEXIT=$(printf "$L_EXIT_FMT" "$L_DIRECT" "${P_DGW[$i]}" "${P_DDNS[$i]}")
+  OEXIT=$(printf "$L_EXIT_FMT" "$L_OVERSEAS" "${P_OGW[$i]}" "${P_ODNS[$i]}")
+  echo "--$DEXIT | bash=\"$0\" param0=switch param1=\"${P_NAMES[$i]}\" param2=direct terminal=false refresh=true$C1"
+  echo "--$OEXIT | bash=\"$0\" param0=switch param1=\"${P_NAMES[$i]}\" param2=overseas terminal=false refresh=true$C2"
   echo "-----"
-  echo "--编辑此 Profile… | bash=\"$0\" param0=editprofile param1=\"${P_NAMES[$i]}\" terminal=false refresh=true"
-  echo "--删除此 Profile… | bash=\"$0\" param0=delprofile param1=\"${P_NAMES[$i]}\" terminal=false refresh=true"
+  echo "--$L_EDIT | bash=\"$0\" param0=editprofile param1=\"${P_NAMES[$i]}\" terminal=false refresh=true"
+  echo "--$L_DEL | bash=\"$0\" param0=delprofile param1=\"${P_NAMES[$i]}\" terminal=false refresh=true"
 done
 echo "---"
-echo "添加 Profile… | bash=\"$0\" param0=addprofile terminal=false refresh=true"
-echo "恢复自动（DHCP） | bash=\"$0\" param0=dhcp terminal=false refresh=true"
+echo "$L_ADD | bash=\"$0\" param0=addprofile terminal=false refresh=true"
+echo "$L_DHCP | bash=\"$0\" param0=dhcp terminal=false refresh=true"
 echo "---"
-echo "退出 | bash=\"$0\" param0=quit terminal=false"
+echo "$L_QUIT | bash=\"$0\" param0=quit terminal=false"

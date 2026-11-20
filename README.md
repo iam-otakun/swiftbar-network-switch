@@ -67,6 +67,8 @@ PROFILE|Office|OVERSEAS_DNS|192.168.50.2
 
 ## Changelog / 更新日志
 
+- **v2.2** (2026-11-20) — Bilingual UI that follows the system language: Chinese on Chinese systems, English elsewhere — menu bar title, menus, dialogs and alerts included (`Profile` remains the product term in both languages). Set the `NETSWITCH_LANG` environment variable (`zh`/`en`) to override. Also fixed the exit submenu items rendering blank (a `printf` format beginning with `--` was parsed as options). / 界面双语跟随系统语言：中文系统显示中文，其它显示英文——菜单栏标题、菜单、对话框与提示全覆盖（`Profile` 在两种语言里都是产品术语）；可用环境变量 `NETSWITCH_LANG`（`zh`/`en`）覆盖。另修复出口子菜单项显示空白（`printf` 格式以 `--` 开头被当成选项解析）。
+
 - **v2.1** (2026-11-20) — Plugin UI language unified to Simplified Chinese (plugin title and description; a migrated v1 config's Profile is now named `默认`). / 插件界面文字统一为简体中文（插件标题与说明；v1 老配置迁移出的 Profile 改名为 `默认`）。
 - **v2.0.1** (2026-11-20) — Edit Profile now starts with the name field, so a Profile can be renamed (empty and duplicate names are rejected; the active Profile follows the rename). / 编辑 Profile 的第一步改为名称框，Profile 可以改名（空名与重名会被拦下；当前 Profile 会跟随新名）。
 - **v2.0** (2026-11-20) — Profiles: each location stores Direct and Overseas gateway/DNS pairs; Profiles are the top-level menu with exits as submenus; add, edit and delete from the menu; network service and local IP detected automatically. / Profile 版：每个地点存直连与出海两组网关/DNS；Profile 为一级菜单、出口为二级；添加、编辑、删除都在菜单里；网卡与本机 IP 自动检测。
