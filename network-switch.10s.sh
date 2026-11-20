@@ -1,6 +1,6 @@
 #!/bin/bash
 # <xbar.title>Network Switch</xbar.title>
-# <xbar.version>v2.0</xbar.version>
+# <xbar.version>v2.0.1</xbar.version>
 # <xbar.author>Otakun and Dash</xbar.author>
 # <xbar.author.github>iam-otakun</xbar.author.github>
 # <xbar.desc>Switches the active network connection between two gateways on the same LAN (for example a direct router and an overseas bypass router) from the menu bar. Locations are kept as Profiles: each Profile stores a gateway and DNS for its Direct exit and its Overseas exit, and Profiles can be added, edited, deleted and selected from the menu. The network service and this Mac's own IP are detected automatically, so the same plugin file works unchanged on any Mac.</xbar.desc>
@@ -212,15 +212,31 @@ add_profile() {
   save_conf
 }
 
-edit_profile() { # $1=Profile 名
-  local idx out gw1 dns1 gw2 dns2
-  idx=$(idx_of "$1")
+edit_profile() { # $1=Profile 名；第一步先改名（可不改），再改两组网关/DNS
+  local idx out gw1 dns1 gw2 dns2 old_name new_name
+  old_name="$1"
+  idx=$(idx_of "$old_name")
   [ "$idx" -ge 0 ] || return 0
-  out=$(ask_values "$1" "${P_DGW[$idx]}" "${P_DDNS[$idx]}" "${P_OGW[$idx]}" "${P_ODNS[$idx]}") || return 0
+  new_name=$(ask_name "$old_name") || return 0
+  new_name=$(echo "$new_name" | sed 's/^ *//; s/ *$//')
+  if [ -z "$new_name" ]; then
+    alert "未保存" "Profile 名称不能为空。"
+    return 0
+  fi
+  case "$new_name" in
+    *"|"*) alert "未保存" "Profile 名称不能包含 | 字符。"; return 0 ;;
+  esac
+  if [ "$new_name" != "$old_name" ] && name_exists "$new_name"; then
+    alert "未保存" "已经有一个叫「$new_name」的 Profile 了。"
+    return 0
+  fi
+  out=$(ask_values "$new_name" "${P_DGW[$idx]}" "${P_DDNS[$idx]}" "${P_OGW[$idx]}" "${P_ODNS[$idx]}") || return 0
   gw1=$(echo "$out" | sed -n '1p'); dns1=$(echo "$out" | sed -n '2p')
   gw2=$(echo "$out" | sed -n '3p'); dns2=$(echo "$out" | sed -n '4p')
   check_values "$gw1" "$dns1" "$gw2" "$dns2" || return 0
+  P_NAMES[$idx]="$new_name"
   P_DGW[$idx]="$gw1"; P_DDNS[$idx]="$dns1"; P_OGW[$idx]="$gw2"; P_ODNS[$idx]="$dns2"
+  [ "$ACTIVE" = "$old_name" ] && ACTIVE="$new_name"
   save_conf
 }
 
