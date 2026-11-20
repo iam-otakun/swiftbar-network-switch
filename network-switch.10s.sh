@@ -1,4 +1,11 @@
 #!/bin/bash
+# <xbar.title>Network Switch</xbar.title>
+# <xbar.version>v1.0</xbar.version>
+# <xbar.author>Otakun and Dash</xbar.author>
+# <xbar.author.github>iam-otakun</xbar.author.github>
+# <xbar.desc>Switches a wired connection between two gateways on the same LAN (for example a school network and an overseas bypass router) from the menu bar, with editable gateway and DNS settings for each mode.</xbar.desc>
+# <xbar.dependencies>bash</xbar.dependencies>
+# <xbar.abouturl>https://github.com/iam-otakun/swiftbar-network-switch</xbar.abouturl>
 # SwiftBar 插件：办公室 Mac 网络切换（学校网络 / 出海系统）
 # 菜单栏显示当前模式，悬停显示网关与 DNS；菜单里可切换、可设置两套网关/DNS
 # 有线网卡 en7，服务名 USB 10/100/1G/2.5G LAN，IP 固定 192.168.50.10
