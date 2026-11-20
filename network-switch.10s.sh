@@ -1,16 +1,16 @@
 #!/bin/bash
-# <xbar.title>Network Switch</xbar.title>
-# <xbar.version>v2.0.1</xbar.version>
+# <xbar.title>网络切换</xbar.title>
+# <xbar.version>v2.1</xbar.version>
 # <xbar.author>Otakun and Dash</xbar.author>
 # <xbar.author.github>iam-otakun</xbar.author.github>
-# <xbar.desc>Switches the active network connection between two gateways on the same LAN (for example a direct router and an overseas bypass router) from the menu bar. Locations are kept as Profiles: each Profile stores a gateway and DNS for its Direct exit and its Overseas exit, and Profiles can be added, edited, deleted and selected from the menu. The network service and this Mac's own IP are detected automatically, so the same plugin file works unchanged on any Mac.</xbar.desc>
+# <xbar.desc>在菜单栏一键切换当前网络的出口：同一局域网内的两个网关（例如直连的主路由与出海的旁路由）之间切换。地点存为 Profile：每个 Profile 各存直连与出海两组网关和 DNS，Profile 的添加、编辑（含改名）、删除、选用都在菜单里完成。网卡服务与本机 IP 自动检测，同一个插件文件在任何 Mac 上原样可用。</xbar.desc>
 # <xbar.dependencies>bash</xbar.dependencies>
 # <xbar.abouturl>https://github.com/iam-otakun/swiftbar-network-switch</xbar.abouturl>
 # SwiftBar 插件：网络切换 v2（Profile 版）
 # 菜单栏显示「Profile名-出口名」，如 Home-出海、Office-直连
 # 每个 Profile 存两组网关/DNS：直连、出海；菜单里可添加/编辑/删除/选用 Profile
 # 网卡服务与本机 IP 自动检测：认当前默认路由的网卡，切换时沿用当前 IP 与掩码
-# 配置文件：~/.network-switch.conf（v1 老配置会自动迁移为名为 Default 的 Profile）
+# 配置文件：~/.network-switch.conf（v1 老配置会自动迁移为名为「默认」的 Profile）
 
 CONF="$HOME/.network-switch.conf"
 
@@ -50,12 +50,12 @@ save_conf() {
 load_conf() {
   P_NAMES=(); P_DGW=(); P_DDNS=(); P_OGW=(); P_ODNS=(); ACTIVE=""
   [ -f "$CONF" ] || return 0
-  # v1 老配置迁移：SCHOOL_* / OVERSEAS_* -> 名为 Default 的 Profile
+  # v1 老配置迁移：SCHOOL_* / OVERSEAS_* -> 名为「默认」的 Profile
   if ! grep -q '^PROFILE|' "$CONF" && grep -q '^SCHOOL_GW=' "$CONF"; then
     SCHOOL_GW=""; SCHOOL_DNS=""; OVERSEAS_GW=""; OVERSEAS_DNS=""
     . "$CONF"
-    ACTIVE="Default"
-    P_NAMES=("Default")
+    ACTIVE="默认"
+    P_NAMES=("默认")
     P_DGW=("$SCHOOL_GW"); P_DDNS=("$SCHOOL_DNS")
     P_OGW=("$OVERSEAS_GW"); P_ODNS=("$OVERSEAS_DNS")
     save_conf

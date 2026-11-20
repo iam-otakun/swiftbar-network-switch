@@ -15,7 +15,7 @@ Some networks have two ways out living on the same subnet — for example a camp
 - **Add Profile…** in the menu creates a new Profile: a name plus a gateway and a DNS text field for each exit, with IPv4 validation. Each Profile's submenu also carries **Edit** (rename included) and **Delete**. No need to touch the script, ever. / 菜单里的**添加 Profile…**即可新建：一个名字，外加每个出口各一组网关与 DNS 文本框，带 IPv4 格式校验。每个 Profile 的子菜单里还有**编辑**（含改名）与**删除**。永远不用再改脚本。
 - **The network service and this Mac's own IP are detected automatically**: the service follows the current default route (Wi-Fi at home, a USB adapter at the office), and switching keeps the IP and subnet mask the Mac already has, changing only the gateway and DNS. The exact same plugin file runs unchanged on every Mac. / **网卡服务与本机 IP 全自动检测**：服务认当前默认路由的那块网卡（家里是 Wi-Fi，办公室是 USB 网卡），切换时沿用本机已有的 IP 与掩码，只改网关与 DNS。同一份插件文件，所有 Mac 原样通用。
 - A **Restore DHCP** item puts the connection back to automatic when you want out. / 菜单里有**恢复自动（DHCP）**，想回到全自动时点它。
-- Settings are stored in `~/.network-switch.conf`. A v1 config file is migrated automatically into a Profile named `Default`. / 设置保存在 `~/.network-switch.conf`。v1 的老配置会自动迁移为一个名为 `Default` 的 Profile。
+- Settings are stored in `~/.network-switch.conf`. A v1 config file is migrated automatically into a Profile named `默认`. / 设置保存在 `~/.network-switch.conf`。v1 的老配置会自动迁移为一个名为 `默认` 的 Profile。
 
 Switching asks for an administrator password (via the standard macOS prompt), because changing a network service's gateway/DNS requires privileges.
 
@@ -64,6 +64,13 @@ PROFILE|Office|OVERSEAS_DNS|192.168.50.2
   它只改那一个网络服务的网关与 DNS，其它一概不动。
 - This is the exact script running daily on the author's Macs (a desktop at the office, a laptop that travels), shared in the hope it is useful to someone with the same two-gateways-one-LAN setup.
   这是作者每天在自己机器上实际运行的脚本原样分享（办公室一台、随身一台），希望能帮到同样「一个局域网、两个出口」的人。
+
+## Changelog / 更新日志
+
+- **v2.1** (2026-11-20) — Plugin UI language unified to Simplified Chinese (plugin title and description; a migrated v1 config's Profile is now named `默认`). / 插件界面文字统一为简体中文（插件标题与说明；v1 老配置迁移出的 Profile 改名为 `默认`）。
+- **v2.0.1** (2026-11-20) — Edit Profile now starts with the name field, so a Profile can be renamed (empty and duplicate names are rejected; the active Profile follows the rename). / 编辑 Profile 的第一步改为名称框，Profile 可以改名（空名与重名会被拦下；当前 Profile 会跟随新名）。
+- **v2.0** (2026-11-20) — Profiles: each location stores Direct and Overseas gateway/DNS pairs; Profiles are the top-level menu with exits as submenus; add, edit and delete from the menu; network service and local IP detected automatically. / Profile 版：每个地点存直连与出海两组网关/DNS；Profile 为一级菜单、出口为二级；添加、编辑、删除都在菜单里；网卡与本机 IP 自动检测。
+- **v1.0** (2026-11-20) — First release: one-click switching between two gateways for a single location. / 首版：单个地点的一键双网关切换。
 
 ## Credits / 作者
 
