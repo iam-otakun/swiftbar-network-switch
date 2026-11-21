@@ -1,6 +1,6 @@
 #!/bin/bash
 # <xbar.title>网络切换 / Network Switch</xbar.title>
-# <xbar.version>v2.2</xbar.version>
+# <xbar.version>v2.3</xbar.version>
 # <xbar.author>Otakun and Dash</xbar.author>
 # <xbar.author.github>iam-otakun</xbar.author.github>
 # <xbar.desc>Switch the active network connection between two gateways on the same LAN from the menu bar. Locations are kept as Profiles, each storing a gateway and DNS for its Direct and Overseas exits; Profiles can be added, edited (rename included), deleted and selected from the menu. The network service and this Mac's own IP are detected automatically. UI language follows the system. 在菜单栏一键切换当前网络的出口：同一局域网内的两个网关之间切换。地点存为 Profile，每个 Profile 各存直连与出海两组网关和 DNS，添加、编辑（含改名）、删除、选用都在菜单里完成。网卡与本机 IP 自动检测，界面语言跟随系统。</xbar.desc>
@@ -35,6 +35,8 @@ if [ "$UI" = zh ]; then
   L_NAME_PROMPT="Profile 名称（例如 Home、Office）"
   L_CANCEL="取消"; L_NEXT="下一步"; L_SAVE="保存"; L_DELETE_BTN="删除"
   L_SWITCH_FAIL="切换失败"; L_NO_IP_FMT='当前网卡（%s）没有 IP 地址，无法切换。'
+  L_SWITCH_CANCELLED="在密码框点了取消，本次没有切换。"
+  L_SWITCH_ERR_FMT='切换命令执行失败，网络没有改动。系统报错：%s'
   L_NOT_SAVED="未保存"; L_NOT_ADDED="未添加"; L_CANT_DELETE="不能删除"
   L_BAD_IP="有地址格式不对，应为 IPv4 形式，例如 192.168.1.1。"
   L_NAME_EMPTY="Profile 名称不能为空。"
@@ -55,6 +57,8 @@ else
   L_NAME_PROMPT="Profile name (e.g. Home, Office)"
   L_CANCEL="Cancel"; L_NEXT="Next"; L_SAVE="Save"; L_DELETE_BTN="Delete"
   L_SWITCH_FAIL="Switch Failed"; L_NO_IP_FMT='The current service (%s) has no IP address, so switching is not possible.'
+  L_SWITCH_CANCELLED="Cancelled at the password prompt - nothing was switched."
+  L_SWITCH_ERR_FMT='The switch command failed, so the network was left unchanged. System error: %s'
   L_NOT_SAVED="Not Saved"; L_NOT_ADDED="Not Added"; L_CANT_DELETE="Cannot Delete"
   L_BAD_IP="One of the addresses is not in IPv4 form, e.g. 192.168.1.1."
   L_NAME_EMPTY="The Profile name cannot be empty."
@@ -181,6 +185,20 @@ alert() { # $1=标题 $2=正文
   osascript -e "display alert \"$1\" message \"$2\"" >/dev/null 2>&1
 }
 
+run_priv() { # $1=要提权执行的 shell 命令；失败时弹窗说明，不再静默（取消与其它错误分开提示）
+  local out rc
+  out=$(osascript -e "do shell script \"$1\" with administrator privileges" 2>&1)
+  rc=$?
+  if [ $rc -ne 0 ]; then
+    case "$out" in
+      *"User canceled"*|*"User cancelled"*) alert "$L_SWITCH_FAIL" "$L_SWITCH_CANCELLED" ;;
+      *) alert "$L_SWITCH_FAIL" "$(printf "$L_SWITCH_ERR_FMT" "$out")" ;;
+    esac
+    return 1
+  fi
+  return 0
+}
+
 valid_ip() {
   echo "$1" | grep -Eq '^([0-9]{1,3}\.){3}[0-9]{1,3}$'
 }
@@ -196,13 +214,13 @@ do_switch() { # $1=网关 $2=DNS
     alert "$L_SWITCH_FAIL" "$(printf "$L_NO_IP_FMT" "$svc")"
     return 0
   fi
-  osascript -e "do shell script \"/usr/sbin/networksetup -setmanual '$svc' $ip $mask $1 && /usr/sbin/networksetup -setdnsservers '$svc' $2\" with administrator privileges" >/dev/null 2>&1
+  run_priv "/usr/sbin/networksetup -setmanual '$svc' $ip $mask $1 && /usr/sbin/networksetup -setdnsservers '$svc' $2"
 }
 
 do_dhcp() {
   local svc
   svc=$(detect_service)
-  osascript -e "do shell script \"/usr/sbin/networksetup -setdhcp '$svc' && /usr/sbin/networksetup -setdnsservers '$svc' Empty\" with administrator privileges" >/dev/null 2>&1
+  run_priv "/usr/sbin/networksetup -setdhcp '$svc' && /usr/sbin/networksetup -setdnsservers '$svc' Empty"
 }
 
 ask_name() { # $1=默认值；取消时返回非 0

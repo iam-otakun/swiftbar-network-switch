@@ -67,6 +67,7 @@ PROFILE|Office|OVERSEAS_DNS|192.168.50.2
 
 ## Changelog / 更新日志
 
+- **v2.3** (2026-11-21) — Switching no longer fails silently: if you cancel the administrator password prompt, an alert now says the switch was cancelled and nothing changed; if the privileged command fails for another reason, the alert shows the system's raw error text so the problem can be diagnosed. / 切换失败不再无声无息：在管理员密码框点取消，会弹窗说明已取消、本次没有切换；提权命令因其它原因失败时，弹窗会带出系统原始报错，便于定位问题。
 - **v2.2** (2026-11-20) — Bilingual UI that follows the system language: Chinese on Chinese systems, English elsewhere — menu bar title, menus, dialogs and alerts included (`Profile` remains the product term in both languages). Set the `NETSWITCH_LANG` environment variable (`zh`/`en`) to override. Also fixed the exit submenu items rendering blank (a `printf` format beginning with `--` was parsed as options). / 界面双语跟随系统语言：中文系统显示中文，其它显示英文——菜单栏标题、菜单、对话框与提示全覆盖（`Profile` 在两种语言里都是产品术语）；可用环境变量 `NETSWITCH_LANG`（`zh`/`en`）覆盖。另修复出口子菜单项显示空白（`printf` 格式以 `--` 开头被当成选项解析）。
 
 - **v2.1** (2026-11-20) — Plugin UI language unified to Simplified Chinese (plugin title and description; a migrated v1 config's Profile is now named `默认`). / 插件界面文字统一为简体中文（插件标题与说明；v1 老配置迁移出的 Profile 改名为 `默认`）。
