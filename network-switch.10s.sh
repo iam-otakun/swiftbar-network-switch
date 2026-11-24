@@ -1,6 +1,6 @@
 #!/bin/bash
 # <xbar.title>网络切换 / Network Switch</xbar.title>
-# <xbar.version>v2.4</xbar.version>
+# <xbar.version>v2.5</xbar.version>
 # <xbar.author>Otakun and Dash</xbar.author>
 # <xbar.author.github>iam-otakun</xbar.author.github>
 # <xbar.desc>Switch the active network connection between two gateways on the same LAN from the menu bar. Locations are kept as Profiles, each storing a gateway and DNS for its Direct and Overseas exits; Profiles can be added, edited (rename included), deleted and selected from the menu. The network service and this Mac's own IP are detected automatically. UI language follows the system. 在菜单栏一键切换当前网络的出口：同一局域网内的两个网关之间切换。地点存为 Profile，每个 Profile 各存直连与出海两组网关和 DNS，添加、编辑（含改名）、删除、选用都在菜单里完成。网卡与本机 IP 自动检测，界面语言跟随系统。</xbar.desc>
@@ -11,6 +11,7 @@
 # 每个 Profile 存两组网关/DNS：直连、出海；菜单里可添加/编辑/删除/选用 Profile
 # 网卡服务与本机 IP 自动检测：认当前默认路由的网卡，切换时沿用当前 IP 与掩码
 # 配置文件：~/.network-switch.conf（v1 老配置会自动迁移为名为「默认」的 Profile）
+# v2.5：菜单末尾新增 About 子菜单（Version、Idea: Otakun、Coding: Dash、GitHub Repository 链接），与其它 Windows/macOS 程序统一规格
 # v2.4：状态与勾选改按实测网关逐个 Profile 匹配（对不上只显示「未知」）；新增 Proxy 开关
 # （系统代理指向设定地址，预设手机热点 Clash Mi），与网关模式双向互斥、切换必过中立态
 
@@ -26,7 +27,7 @@ else
 fi
 if [ "$UI" = zh ]; then
   L_DIRECT="直连"; L_OVERSEAS="出海"; L_UNKNOWN="未知"; L_GW="网关"
-  L_AUTO="自动（DHCP）"; L_DHCP="恢复自动（DHCP）"; L_QUIT="退出"
+  L_AUTO="自动（DHCP）"; L_DHCP="恢复自动（DHCP）"; L_QUIT="退出"; L_ABOUT="关于"
   L_EDIT="编辑此 Profile…"; L_DEL="删除此 Profile…"; L_ADD="添加 Profile…"
   L_NOTCONF="未配置"; L_NOTCONF_TIP="还没有任何 Profile"; L_NOTCONF_LINE="还没有 Profile，先添加一个"
   L_TIP_FMT='当前：%s-%s，网关 %s，DNS %s，网卡 %s（%s）'
@@ -55,7 +56,7 @@ if [ "$UI" = zh ]; then
   L_BAD_PORT="端口应为 1–65535 的数字。"
 else
   L_DIRECT="Direct"; L_OVERSEAS="Overseas"; L_UNKNOWN="Unknown"; L_GW="Gateway"
-  L_AUTO="Automatic (DHCP)"; L_DHCP="Restore Automatic (DHCP)"; L_QUIT="Quit"
+  L_AUTO="Automatic (DHCP)"; L_DHCP="Restore Automatic (DHCP)"; L_QUIT="Quit"; L_ABOUT="About"
   L_EDIT="Edit this Profile..."; L_DEL="Delete this Profile..."; L_ADD="Add Profile..."
   L_NOTCONF="Not Configured"; L_NOTCONF_TIP="No Profiles yet"; L_NOTCONF_LINE="No Profiles yet - add one first"
   L_TIP_FMT='Current: %s-%s, gateway %s, DNS %s, service %s (%s)'
@@ -527,5 +528,11 @@ echo "$L_EDIT_PROXY | bash=\"$0\" param0=editproxy terminal=false refresh=true"
 echo "---"
 echo "$L_ADD | bash=\"$0\" param0=addprofile terminal=false refresh=true"
 echo "$L_DHCP | bash=\"$0\" param0=dhcp terminal=false refresh=true"
+echo "---"
+echo "$L_ABOUT"
+echo "--Version v2.5"
+echo "--Idea: Otakun"
+echo "--Coding: Dash"
+echo "--GitHub Repository | href=https://github.com/iam-otakun/swiftbar-network-switch"
 echo "---"
 echo "$L_QUIT | bash=\"$0\" param0=quit terminal=false"
