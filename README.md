@@ -10,11 +10,13 @@ Some networks have two ways out living on the same subnet — for example a camp
 
 有些网络里，同一个子网住着两个出口——比如学校/办公室局域网：默认路由器（`.1`）直达本地与互联网，另一台盒子（`.2`，例如跑代理的旁路由）则把流量送往另一个出口。macOS 没有现成的快捷方式来回切换一个连接的网关与 DNS；而且人在两个这样的网络之间移动时，每个地方的网关还不一样。于是这个插件把开关放进菜单栏，并按地点组织：
 
-- The menu bar shows the current state as **Profile–Exit**, e.g. `Home-出海` or `Office-直连`. / 菜单栏以**「Profile 名-出口名」**显示当前状态，如 `Home-出海`、`Office-直连`。
+- The menu bar shows the current state as **Profile–Exit**, e.g. `Home-出海` or `Office-直连`. The profile named is the one the measured gateway actually matches; on a network that matches no Profile, it shows just **Unknown**, with no profile name claimed. / 菜单栏以**「Profile 名-出口名」**显示当前状态，如 `Home-出海`、`Office-直连`。所显示的 Profile 是实测网关真正对上的那个；在对不上任何 Profile 的网络上，只显示**「未知」**，不挂任何 Profile 的名字。
 - The dropdown lists the **Profiles at the top level**; each Profile opens a submenu with its two exits — **Direct（直连）** and **Overseas（出海）** — each with its own gateway and DNS. Clicking an exit applies it and makes that Profile the current one. / 下拉菜单里 **Profile 是一级菜单**，每个 Profile 的子菜单里是它的两个出口——**直连**与**出海**——各有自己的网关与 DNS。点中某个出口即切换过去，并把该 Profile 定为当前。
 - **Add Profile…** in the menu creates a new Profile: a name plus a gateway and a DNS text field for each exit, with IPv4 validation. Each Profile's submenu also carries **Edit** (rename included) and **Delete**. No need to touch the script, ever. / 菜单里的**添加 Profile…**即可新建：一个名字，外加每个出口各一组网关与 DNS 文本框，带 IPv4 格式校验。每个 Profile 的子菜单里还有**编辑**（含改名）与**删除**。永远不用再改脚本。
 - **The network service and this Mac's own IP are detected automatically**: the service follows the current default route (Wi-Fi at home, a USB adapter at the office), and switching keeps the IP and subnet mask the Mac already has, changing only the gateway and DNS. The exact same plugin file runs unchanged on every Mac. / **网卡服务与本机 IP 全自动检测**：服务认当前默认路由的那块网卡（家里是 Wi-Fi，办公室是 USB 网卡），切换时沿用本机已有的 IP 与掩码，只改网关与 DNS。同一份插件文件，所有 Mac 原样通用。
 - A **Restore DHCP** item puts the connection back to automatic when you want out. / 菜单里有**恢复自动（DHCP）**，想回到全自动时点它。
+
+- A **Proxy** item under the Profiles toggles the macOS system proxy (HTTP, HTTPS and SOCKS together), pointing at the address stored in the config (`APP|PROXY_IP` / `APP|PROXY_PORT`, preset `172.20.10.1` / `7890` — e.g. a phone hotspot sharing Clash Mi). **Edit Proxy Address...** changes the address, and editing while the proxy is on re-points it immediately. Gateway mode and proxy mode are mutually exclusive in both directions: while the Proxy is on, every Profile's exits are greyed out; while the measured gateway matches a Profile exit, the Proxy item is greyed out. Moving between the two modes always passes through the neutral state — **Restore DHCP**, or a network that matches no Profile. / Profile 下面有一个 **Proxy** 菜单项，开关 macOS 系统代理（HTTP、HTTPS、SOCKS 三件套一起），指向配置里存的地址（`APP|PROXY_IP` / `APP|PROXY_PORT`，预设 `172.20.10.1` / `7890`，例如手机个人热点共享的 Clash Mi）；**编辑代理地址…**可改地址，代理开着时改完立即改指新地址。网关模式与代理模式双向互斥：Proxy 开着时，所有 Profile 的出口变灰；实测网关对上某个 Profile 出口时，Proxy 变灰。两种模式之间切换必须经过中立态——**恢复自动（DHCP）**，或换到对不上任何 Profile 的网络。
 - Settings are stored in `~/.network-switch.conf`. A v1 config file is migrated automatically into a Profile named `默认`. / 设置保存在 `~/.network-switch.conf`。v1 的老配置会自动迁移为一个名为 `默认` 的 Profile。
 
 Switching asks for an administrator password (via the standard macOS prompt), because changing a network service's gateway/DNS requires privileges.
@@ -54,7 +56,11 @@ PROFILE|Office|DIRECT_GW|192.168.50.1
 PROFILE|Office|DIRECT_DNS|192.168.50.1
 PROFILE|Office|OVERSEAS_GW|192.168.50.2
 PROFILE|Office|OVERSEAS_DNS|192.168.50.2
+APP|PROXY_IP|172.20.10.1
+APP|PROXY_PORT|7890
 ```
+
+The `APP|` lines are shared with the Windows edition (its own settings such as `APP|AUTOSTART` may also live here; this plugin preserves lines it does not own when saving). / `APP|` 行与 Windows 版共用（它自己的设置如 `APP|AUTOSTART` 也存在这个文件里；本插件保存时保留不属于自己的行）。
 
 ## Notes / 说明
 
@@ -66,6 +72,8 @@ PROFILE|Office|OVERSEAS_DNS|192.168.50.2
   这是作者每天在自己机器上实际运行的脚本原样分享（办公室一台、随身一台），希望能帮到同样「一个局域网、两个出口」的人。
 
 ## Changelog / 更新日志
+
+- **v2.4** (2026-11-24) — Feature parity with the Windows edition v1.2.x. A **Proxy** item toggles the macOS system proxy (HTTP/HTTPS/SOCKS) pointing at the configured address (preset: a phone hotspot's Clash Mi), with **Edit Proxy Address...** beside it; gateway mode and proxy mode are mutually exclusive in both directions, and switching between them passes through the neutral state. The menu-bar state and the checkmarks now follow the measured gateway across **all** Profiles — on a network that matches none, the label is just **Unknown**, with no profile name claimed. Saving the config now preserves `APP|` lines owned by the Windows edition. / 与 Windows 版 v1.2.x 功能对齐。新增 **Proxy** 开关：开关 macOS 系统代理（HTTP/HTTPS/SOCKS）并指向设定地址（预设手机热点的 Clash Mi），旁边有**编辑代理地址…**；网关模式与代理模式双向互斥，切换必过中立态。菜单栏状态与勾选改按实测网关逐个 Profile 匹配——对不上任何 Profile 时只显示**「未知」**，不挂名。保存配置时保留 Windows 版的 `APP|` 行。
 
 - **v2.3** (2026-11-21) — Switching no longer fails silently: if you cancel the administrator password prompt, an alert now says the switch was cancelled and nothing changed; if the privileged command fails for another reason, the alert shows the system's raw error text so the problem can be diagnosed. / 切换失败不再无声无息：在管理员密码框点取消，会弹窗说明已取消、本次没有切换；提权命令因其它原因失败时，弹窗会带出系统原始报错，便于定位问题。
 - **v2.2** (2026-11-20) — Bilingual UI that follows the system language: Chinese on Chinese systems, English elsewhere — menu bar title, menus, dialogs and alerts included (`Profile` remains the product term in both languages). Set the `NETSWITCH_LANG` environment variable (`zh`/`en`) to override. Also fixed the exit submenu items rendering blank (a `printf` format beginning with `--` was parsed as options). / 界面双语跟随系统语言：中文系统显示中文，其它显示英文——菜单栏标题、菜单、对话框与提示全覆盖（`Profile` 在两种语言里都是产品术语）；可用环境变量 `NETSWITCH_LANG`（`zh`/`en`）覆盖。另修复出口子菜单项显示空白（`printf` 格式以 `--` 开头被当成选项解析）。
