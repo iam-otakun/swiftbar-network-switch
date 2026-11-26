@@ -1,6 +1,6 @@
 #!/bin/bash
 # <xbar.title>网络切换 / Network Switch</xbar.title>
-# <xbar.version>v2.5</xbar.version>
+# <xbar.version>v2.6</xbar.version>
 # <xbar.author>Otakun and Dash</xbar.author>
 # <xbar.author.github>iam-otakun</xbar.author.github>
 # <xbar.desc>Switch the active network connection between two gateways on the same LAN from the menu bar. Locations are kept as Profiles, each storing a gateway and DNS for its Direct and Overseas exits; Profiles can be added, edited (rename included), deleted and selected from the menu. The network service and this Mac's own IP are detected automatically. UI language follows the system. 在菜单栏一键切换当前网络的出口：同一局域网内的两个网关之间切换。地点存为 Profile，每个 Profile 各存直连与出海两组网关和 DNS，添加、编辑（含改名）、删除、选用都在菜单里完成。网卡与本机 IP 自动检测，界面语言跟随系统。</xbar.desc>
@@ -11,6 +11,7 @@
 # 每个 Profile 存两组网关/DNS：直连、出海；菜单里可添加/编辑/删除/选用 Profile
 # 网卡服务与本机 IP 自动检测：认当前默认路由的网卡，切换时沿用当前 IP 与掩码
 # 配置文件：~/.network-switch.conf（v1 老配置会自动迁移为名为「默认」的 Profile）
+# v2.6：与 Windows 版 1.3.0 对齐——菜单顶部新增实时网速一行（默认网卡 1 秒采样）；「网速明细…」弹窗显示总速与连接数前 10 的进程（无驱动口径与 Windows 版一致：逐进程只给连接数、不编造逐进程速度）
 # v2.5：菜单末尾新增 About 子菜单（Version、Idea: Otakun、Coding: Dash、GitHub Repository 链接），与其它 Windows/macOS 程序统一规格
 # v2.4：状态与勾选改按实测网关逐个 Profile 匹配（对不上只显示「未知」）；新增 Proxy 开关
 # （系统代理指向设定地址，预设手机热点 Clash Mi），与网关模式双向互斥、切换必过中立态
@@ -54,6 +55,11 @@ if [ "$UI" = zh ]; then
   L_PROXY_IP_PROMPT="代理 IP（例如手机热点的 172.20.10.1）"
   L_PROXY_PORT_PROMPT="代理端口（例如 7890）"
   L_BAD_PORT="端口应为 1–65535 的数字。"
+  L_TRAFFIC_DETAIL="网速明细…"
+  L_TRAFFIC_TITLE="网络切换 · 网速"
+  L_TOTAL="总速"
+  L_TOP_PROC="连接数最多的进程（前 10）"
+  L_OK="好"
 else
   L_DIRECT="Direct"; L_OVERSEAS="Overseas"; L_UNKNOWN="Unknown"; L_GW="Gateway"
   L_AUTO="Automatic (DHCP)"; L_DHCP="Restore Automatic (DHCP)"; L_QUIT="Quit"; L_ABOUT="About"
@@ -83,6 +89,11 @@ else
   L_PROXY_IP_PROMPT="Proxy IP (e.g. 172.20.10.1, a phone hotspot)"
   L_PROXY_PORT_PROMPT="Proxy port (e.g. 7890)"
   L_BAD_PORT="The port must be a number between 1 and 65535."
+  L_TRAFFIC_DETAIL="Traffic Details..."
+  L_TRAFFIC_TITLE="Network Switch - Traffic"
+  L_TOTAL="Total"
+  L_TOP_PROC="Top processes by connections (top 10)"
+  L_OK="OK"
 fi
 
 # ---------- 配置 ----------
@@ -241,6 +252,56 @@ run_priv() { # $1=要提权执行的 shell 命令；失败时弹窗说明，不�
 
 valid_ip() {
   echo "$1" | grep -Eq '^([0-9]{1,3}\.){3}[0-9]{1,3}$'
+}
+
+# ---------- 网速（与 Windows 版 1.3.0 对齐：总速实测；逐进程只给连接数，不编造逐进程速度） ----------
+
+detect_iface() {
+  route -n get default 2>/dev/null | awk '/interface:/{print $2; exit}'
+}
+
+iface_bytes() { # $1=网卡名；输出 "入字节 出字节"，取不到则空
+  netstat -ib -I "$1" 2>/dev/null | awk '$3 ~ /^<Link/ {print $7, $10; exit}'
+}
+
+fmt_rate() { # $1=字节/秒
+  awk -v b="$1" 'BEGIN {
+    if (b >= 1048576) printf "%.1f MB/s", b/1048576;
+    else if (b >= 1024) printf "%.1f KB/s", b/1024;
+    else printf "%d B/s", b;
+  }'
+}
+
+sample_speed() { # 输出 "↓ x  ↑ y"；默认网卡计数器两次采样、间隔 1 秒
+  local iface b1 b2 i1 o1 i2 o2 di do
+  iface=$(detect_iface)
+  [ -n "$iface" ] || return 1
+  b1=$(iface_bytes "$iface"); [ -n "$b1" ] || return 1
+  sleep 1
+  b2=$(iface_bytes "$iface"); [ -n "$b2" ] || return 1
+  i1=$(echo $b1 | cut -d' ' -f1); o1=$(echo $b1 | cut -d' ' -f2)
+  i2=$(echo $b2 | cut -d' ' -f1); o2=$(echo $b2 | cut -d' ' -f2)
+  di=$((i2 - i1)); [ $di -lt 0 ] && di=0
+  do=$((o2 - o1)); [ $do -lt 0 ] && do=0
+  echo "↓ $(fmt_rate $di)  ↑ $(fmt_rate $do)"
+}
+
+show_traffic() { # 弹窗：总速 + 连接数前 10 的进程（lsof 只在点击时跑，不拖慢每 10 秒的菜单刷新）
+  local spd procs body
+  spd=$(sample_speed)
+  procs=$(lsof -nP -iTCP -iUDP 2>/dev/null | awk 'NR>1 {c[$1]++} END {for (p in c) print c[p], p}' | sort -rn | head -10 | awk '{printf "%s  %s\n", $2, $1}')
+  body="$L_TOTAL: $spd"
+  if [ -n "$procs" ]; then
+    body="$body
+
+$L_TOP_PROC:
+$procs"
+  fi
+  osascript - "$body" "$L_TRAFFIC_TITLE" "$L_OK" <<'APPLESCRIPT'
+on run argv
+  display dialog (item 1 of argv) with title (item 2 of argv) buttons {(item 3 of argv)} default button (item 3 of argv)
+end run
+APPLESCRIPT
 }
 
 # ---------- 动作 ----------
@@ -439,6 +500,7 @@ case "$1" in
   dhcp)        do_dhcp;      exit 0 ;;
   proxy)       do_proxy;     exit 0 ;;
   editproxy)   edit_proxy;   exit 0 ;;
+  traffic)     show_traffic; exit 0 ;;
   quit)        osascript -e 'tell application "SwiftBar" to quit'; exit 0 ;;
 esac
 
@@ -490,6 +552,12 @@ else
   printf "$L_STATUS_UNKNOWN_FMT\n" "$GW" "$DNS"
 fi
 echo "---"
+SPD=$(sample_speed)
+if [ -n "$SPD" ]; then
+  echo "$SPD"
+  echo "$L_TRAFFIC_DETAIL | bash=\"$0\" param0=traffic terminal=false"
+  echo "---"
+fi
 for i in "${!P_NAMES[@]}"; do
   if [ "$i" = "$MATCH_IDX" ]; then
     echo "${P_NAMES[$i]} | checked=true"
@@ -530,7 +598,7 @@ echo "$L_ADD | bash=\"$0\" param0=addprofile terminal=false refresh=true"
 echo "$L_DHCP | bash=\"$0\" param0=dhcp terminal=false refresh=true"
 echo "---"
 echo "$L_ABOUT"
-echo "--Version v2.5"
+echo "--Version v2.6"
 echo "--Idea: Otakun"
 echo "--Coding: Dash"
 echo "--GitHub Repository | href=https://github.com/iam-otakun/swiftbar-network-switch"
