@@ -1,3 +1,7 @@
+> **This SwiftBar plugin has been superseded / 本 SwiftBar 插件已被独立版取代** — the standalone app lives in [**NetworkSwitch**](https://github.com/iam-otakun/NetworkSwitch) (macOS and Windows editions together, v2.0.0+). This repository is archived and kept for history only. / 独立版在 [NetworkSwitch](https://github.com/iam-otakun/NetworkSwitch)（macOS 与 Windows 两端同仓，v2.0.0 起）。本仓库已归档，仅作历史留存。
+
+---
+
 # Network Switch — a SwiftBar plugin / 网络切换 SwiftBar 插件
 
 A tiny [SwiftBar](https://github.com/swiftbar/SwiftBar) plugin for macOS that switches the active network connection between **two gateways on the same LAN** with one click from the menu bar. Locations are kept as **Profiles** — take the same Mac home and to the office, and each place has its own pair of gateways.
